@@ -1,8 +1,8 @@
 import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
-import numpy as np
 from openpyxl import load_workbook
+import numpy as np
 
 # Initialize session state
 if 'selected_category' not in st.session_state:
@@ -26,7 +26,7 @@ priority_colors = {"High": "red", "Medium": "orange", "Low": "green"}
 # Load preferences from Excel
 def load_preferences():
     try:
-        df = pd.read_excel("data/user_preferences.xlsx", sheet_name="Preferences")
+        df = pd.read_excel("user_preferences.xlsx", sheet_name="Preferences")
         return df
     except FileNotFoundError:
         st.error("Preferences file not found. Please ensure `data/user_preferences.xlsx` exists.")
@@ -34,7 +34,7 @@ def load_preferences():
 
 # Save preferences to Excel
 def save_preferences(df):
-    with pd.ExcelWriter("data/user_preferences.xlsx", engine="openpyxl") as writer:
+    with pd.ExcelWriter("user_preferences.xlsx", engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Preferences")
 
 # Create a 3D network graph
@@ -106,11 +106,44 @@ def create_3d_network_graph(categories):
     )
     return fig
 
+# Create a 3D pie chart
+def create_3d_pie_chart(categories):
+    labels = list(categories.keys())
+    values = [len(subcats) for subcats in categories.values()]
+
+    fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=0.3)])
+    fig.update_traces(hoverinfo='label+percent', textinfo='value', textfont_size=12,
+                      marker=dict(colors=['blue', 'purple', 'cyan', 'magenta', 'lime', 'gold', 'teal', 'coral']))
+    fig.update_layout(title="3D Pie Chart of Category Distribution", template="plotly_dark")
+    return fig
+
+# Create a bubble chart
+def create_bubble_chart(categories):
+    labels = list(categories.keys())
+    sizes = [len(subcats) for subcats in categories.values()]
+    colors = ['blue', 'purple', 'cyan', 'magenta', 'lime', 'gold', 'teal', 'coral']
+
+    fig = go.Figure(data=[go.Scatter(
+        x=labels, y=sizes, mode='markers', marker=dict(size=sizes, color=colors, sizemode='area', sizeref=2.*max(sizes)/(40.**2))
+    )])
+    fig.update_layout(title="Bubble Chart of Category Sizes", template="plotly_dark")
+    return fig
+
 # Display the 3D network graph
-st.title("🌟 Dynamic Marketing Wheel with 3D Network Graph 🌟")
+st.title("🌟 Dynamic Marketing Wheel with Advanced Visualizations 🌟")
 st.subheader("🌐 3D Network Graph of Categories and Subcategories")
 fig_3d_network = create_3d_network_graph(categories)
 st.plotly_chart(fig_3d_network, use_container_width=True)
+
+# Display the 3D pie chart
+st.subheader("📊 3D Pie Chart of Category Distribution")
+fig_3d_pie = create_3d_pie_chart(categories)
+st.plotly_chart(fig_3d_pie, use_container_width=True)
+
+# Display the bubble chart
+st.subheader("🎈 Bubble Chart of Category Sizes")
+fig_bubble = create_bubble_chart(categories)
+st.plotly_chart(fig_bubble, use_container_width=True)
 
 # Display the 3D wheel
 st.subheader("🌍 Interactive 3D Marketing Wheel")
