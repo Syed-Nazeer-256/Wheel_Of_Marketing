@@ -1,7 +1,8 @@
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
-import sqlite3
+import pandas as pd
+from openpyxl import load_workbook
 
 # Initialize session state
 if 'selected_category' not in st.session_state:
@@ -22,8 +23,22 @@ categories = {
 # Priority color mapping
 priority_colors = {"High": "red", "Medium": "orange", "Low": "green"}
 
-# Create a 3D scatter plot for the wheel
-def create_3d_wheel(categories):
+# Load preferences from Excel
+def load_preferences():
+    try:
+        df = pd.read_excel("data/user_preferences.xlsx", sheet_name="Preferences")
+        return df
+    except FileNotFoundError:
+        st.error("Preferences file not found. Please ensure `data/user_preferences.xlsx` exists.")
+        return pd.DataFrame(columns=["Category", "Priority"])
+
+# Save preferences to Excel
+def save_preferences(df):
+    with pd.ExcelWriter("data/user_preferences.xlsx", engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Preferences")
+
+# Create a dynamic 3D scatter plot for the wheel
+def create_3d_wheel(categories, selected_category=None):
     fig = go.Figure()
 
     # Generate points for the wheel
@@ -35,11 +50,15 @@ def create_3d_wheel(categories):
     z = np.zeros(num_categories)
 
     # Add main category points with hover effects
+    colors = ['blue', 'purple', 'cyan', 'magenta', 'lime', 'gold', 'teal', 'coral']
+    if selected_category:
+        colors = ["yellow" if cat == selected_category else color for cat, color in zip(categories.keys(), colors)]
+
     fig.add_trace(go.Scatter3d(
         x=x, y=y, z=z,
         mode='markers+text',
         text=list(categories.keys()),
-        marker=dict(size=10, color=['blue', 'purple', 'cyan', 'magenta', 'lime', 'gold', 'teal', 'coral']),
+        marker=dict(size=10, color=colors),
         textposition="top center",
         hoverinfo='text'
     ))
@@ -54,13 +73,14 @@ def create_3d_wheel(categories):
         showlegend=False,
         margin=dict(l=0, r=0, b=0, t=0),
         title="Interactive 3D Marketing Wheel",
-        title_font=dict(color="darkblue", size=20)
+        title_font=dict(color="darkblue", size=20),
+        template="plotly_dark"
     )
     return fig
 
 # Display the wheel in Streamlit
-st.title("🌟 3D Marketing Wheel Interface 🌟")
-fig = create_3d_wheel(categories)
+st.title("🌟 Live Dynamic 3D Marketing Wheel 🌟")
+fig = create_3d_wheel(categories, st.session_state.selected_category)
 st.plotly_chart(fig, use_container_width=True)
 
 # Category selection and expansion
@@ -81,26 +101,16 @@ if st.session_state.selected_category:
     priority = st.selectbox("Set Priority:", list(priority_colors.keys()))
     st.markdown(f"Priority for **{st.session_state.selected_category}**: <span style='color:{priority_colors[priority]}'>{priority}</span>", unsafe_allow_html=True)
 
-    # Save preferences to SQLite database
-    conn = sqlite3.connect('data/user_preferences.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS preferences
-                 (category TEXT, priority TEXT)''')
-
-    if st.button("💾 Save Preferences"):
-        c.execute("INSERT INTO preferences (category, priority) VALUES (?, ?)",
-                  (st.session_state.selected_category, priority))
-        conn.commit()
-        st.success(f"✅ Preferences saved for {st.session_state.selected_category}!")
+    # Save preferences to Excel
+    df = load_preferences()
+    new_row = pd.DataFrame({"Category": [st.session_state.selected_category], "Priority": [priority]})
+    df = pd.concat([df, new_row], ignore_index=True).drop_duplicates(subset=["Category"], keep="last")
+    save_preferences(df)
+    st.success(f"✅ Preferences saved for {st.session_state.selected_category}!")
 
     # Load saved preferences
-    c.execute("SELECT * FROM preferences")
-    preferences = c.fetchall()
     st.subheader("📚 Saved Preferences")
-    st.table(preferences)
-
-    # Close connection
-    conn.close()
+    st.table(df)
 
 # Add animations and real-time updates
 st.subheader("🎉 Real-Time Updates")
