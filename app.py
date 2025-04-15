@@ -36,8 +36,8 @@ def save_preferences(df):
     with pd.ExcelWriter("data/user_preferences.xlsx", engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Preferences")
 
-# Create a thread-like network graph
-def create_thread_graph(categories):
+# Create a 3D network graph
+def create_3d_network_graph(categories):
     # Nodes: Categories + Subcategories
     nodes = list(categories.keys())
     subcategory_nodes = [subcat for sublist in categories.values() for subcat in sublist]
@@ -47,63 +47,73 @@ def create_thread_graph(categories):
     edges = []
     for category, subcats in categories.items():
         for subcat in subcats:
-            edges.append((category, subcat))
+            edges.append((all_nodes.index(category), all_nodes.index(subcat)))
+
+    # Generate random positions for nodes in 3D space
+    np.random.seed(42)  # For reproducibility
+    node_positions = {i: (np.random.rand(), np.random.rand(), np.random.rand()) for i in range(len(all_nodes))}
 
     # Create edge traces
     edge_x = []
     edge_y = []
-    for edge in edges:
-        x0, y0 = all_nodes.index(edge[0]), 0  # Source node position
-        x1, y1 = all_nodes.index(edge[1]), 1  # Target node position
+    edge_z = []
+    for src, tgt in edges:
+        x0, y0, z0 = node_positions[src]
+        x1, y1, z1 = node_positions[tgt]
         edge_x += [x0, x1, None]
         edge_y += [y0, y1, None]
+        edge_z += [z0, z1, None]
 
     # Create node traces
-    node_x = [i for i in range(len(all_nodes))]
-    node_y = [0 if node in nodes else 1 for node in all_nodes]
+    node_x = [node_positions[i][0] for i in range(len(all_nodes))]
+    node_y = [node_positions[i][1] for i in range(len(all_nodes))]
+    node_z = [node_positions[i][2] for i in range(len(all_nodes))]
     node_color = ['blue' if node in nodes else 'green' for node in all_nodes]
 
     # Create figure
     fig = go.Figure()
 
     # Add edges
-    fig.add_trace(go.Scatter(
-        x=edge_x, y=edge_y,
+    fig.add_trace(go.Scatter3d(
+        x=edge_x, y=edge_y, z=edge_z,
         mode='lines',
         line=dict(width=1, color='gray'),
         hoverinfo='none'
     ))
 
     # Add nodes
-    fig.add_trace(go.Scatter(
-        x=node_x, y=node_y,
+    fig.add_trace(go.Scatter3d(
+        x=node_x, y=node_y, z=node_z,
         mode='markers+text',
         text=all_nodes,
-        marker=dict(size=15, color=node_color),
+        marker=dict(size=8, color=node_color),
         textposition="top center",
         hoverinfo='text'
     ))
 
     # Customize layout
     fig.update_layout(
-        title="Thread-Like Category Connections",
+        title="3D Network Graph of Categories and Subcategories",
+        scene=dict(
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            zaxis=dict(visible=False)
+        ),
         showlegend=False,
         margin=dict(l=0, r=0, b=0, t=40),
-        xaxis=dict(showgrid=False, zeroline=False, visible=False),
-        yaxis=dict(showgrid=False, zeroline=False, visible=False),
         template="plotly_dark"
     )
     return fig
 
-# Display the thread-like network graph
-st.title("🌟 Dynamic Marketing Wheel with Thread Visualization 🌟")
-st.subheader("🌐 Thread-Like Category Connections")
-fig_thread = create_thread_graph(categories)
-st.plotly_chart(fig_thread, use_container_width=True)
+# Display the 3D network graph
+st.title("🌟 Dynamic Marketing Wheel with 3D Network Graph 🌟")
+st.subheader("🌐 3D Network Graph of Categories and Subcategories")
+fig_3d_network = create_3d_network_graph(categories)
+st.plotly_chart(fig_3d_network, use_container_width=True)
 
 # Display the 3D wheel
 st.subheader("🌍 Interactive 3D Marketing Wheel")
-fig_3d = go.Figure()
+fig_3d_wheel = go.Figure()
 
 # Generate points for the wheel
 num_categories = len(categories)
@@ -114,7 +124,7 @@ y = [radius * np.sin(t) for t in theta]
 z = [0] * num_categories
 
 # Add main category points
-fig_3d.add_trace(go.Scatter3d(
+fig_3d_wheel.add_trace(go.Scatter3d(
     x=x, y=y, z=z,
     mode='markers+text',
     text=list(categories.keys()),
@@ -124,7 +134,7 @@ fig_3d.add_trace(go.Scatter3d(
 ))
 
 # Customize layout
-fig_3d.update_layout(
+fig_3d_wheel.update_layout(
     scene=dict(
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
@@ -136,7 +146,7 @@ fig_3d.update_layout(
     title_font=dict(color="darkblue", size=20),
     template="plotly_dark"
 )
-st.plotly_chart(fig_3d, use_container_width=True)
+st.plotly_chart(fig_3d_wheel, use_container_width=True)
 
 # Category selection and expansion
 st.subheader("🔍 Explore Categories")
