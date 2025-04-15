@@ -34,7 +34,7 @@ def load_preferences():
 
 # Save preferences to Excel
 def save_preferences(df):
-    with pd.ExcelWriter("data/user_preferences.xlsx", engine="openpyxl") as writer:
+    with pd.ExcelWriter("user_preferences.xlsx", engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Preferences")
 
 # Create a dynamic 3D scatter plot for the wheel
