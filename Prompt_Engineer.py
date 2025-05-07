@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import os
 import time
+import random
 
 GEMINI_API_KEY = "AIzaSyD1WeVGIKaV1oyYlDsk2a_EDWdsSclwMqU"
 
