@@ -6,9 +6,8 @@ import random
 
 GEMINI_API_KEY = "AIzaSyD1WeVGIKaV1oyYlDsk2a_EDWdsSclwMqU"
 
-# Configure Gemini API
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')  # Use flash model for higher free tier limits
 
 # Custom CSS for fluid animations and dark theme
 st.markdown("""
