@@ -75,6 +75,15 @@ h1, h2, h3 {
     color: #cdd6f4;
     text-shadow: 0 2px 4px rgba(107, 72, 255, 0.2);
 }
+.error-box {
+    background-color: #3b2a2a;
+    border: 1px solid #ff5555;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    color: #ffcccc;
+    animation: fadeIn 0.5s ease-in;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -91,24 +100,31 @@ with st.form("prompt_form"):
     custom_instructions = st.text_area("Additional Instructions (optional)", placeholder="E.g., 'Include examples' or 'Focus on sci-fi themes'")
     submitted = st.form_submit_button("Generate Prompt")
 
-# Function to generate prompt using Gemini API
-def generate_prompt(tone, domain, complexity, custom_instructions):
-    try:
-        prompt_template = f"""
-        You are an expert prompt engineer tasked with creating a golden-standard, highly detailed, and creative prompt. 
-        Craft a prompt with the following specifications:
-        - Tone: {tone}
-        - Domain: {domain}
-        - Complexity: {complexity}
-        - Additional Instructions: {custom_instructions if custom_instructions else 'None'}
-        The prompt should be clear, engaging, and optimized for generating high-quality responses. 
-        Include specific guidance, context, and examples where relevant. 
-        Return the prompt in a concise yet comprehensive format, suitable for immediate use.
-        """
-        response = model.generate_content(prompt_template)
-        return response.text
-    except Exception as e:
-        return f"Error generating prompt: {str(e)}"
+# Function to generate prompt using Gemini API with retry logic
+def generate_prompt(tone, domain, complexity, custom_instructions, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            prompt_template = f"""
+            You are an expert prompt engineer tasked with creating a golden-standard, highly detailed, and creative prompt. 
+            Craft a prompt with the following specifications:
+            - Tone: {tone}
+            - Domain: {domain}
+            - Complexity: {complexity}
+            - Additional Instructions: {custom_instructions if custom_instructions else 'None'}
+            The prompt should be clear, engaging, and optimized for generating high-quality responses. 
+            Include specific guidance, context, and examples where relevant. 
+            Return the prompt in a concise yet comprehensive format, suitable for immediate use.
+            """
+            response = model.generate_content(prompt_template)
+            return response.text, None
+        except Exception as e:
+            if "429" in str(e):
+                retry_delay = 41 + random.uniform(0, 5)  # Base delay from error + jitter
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    continue
+                return None, "Error: Exceeded Gemini API rate limits. Please check your plan and billing details at https://ai.google.dev/gemini-api/docs/rate-limits or wait 41 seconds before retrying."
+            return None, f"Error generating prompt: {str(e)}"
 
 # Handle form submission
 if submitted:
@@ -116,15 +132,21 @@ if submitted:
     with st.spinner(""):
         placeholder = st.empty()
         placeholder.markdown('<div class="spinner"></div>', unsafe_allow_html=True)
-        time.sleep(1)  # Simulate processing time (adjust as needed)
-        prompt_result = generate_prompt(tone, domain, complexity, custom_instructions)
+        prompt_result, error_message = generate_prompt(tone, domain, complexity, custom_instructions)
         placeholder.empty()
     
-    # Display generated prompt
-    st.markdown('<div class="output-box">', unsafe_allow_html=True)
-    st.subheader("Generated Prompt")
-    st.write(prompt_result)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Display result or error
+    if error_message:
+        st.markdown('<div class="error-box">', unsafe_allow_html=True)
+        st.error(error_message)
+        if "rate limits" in error_message:
+            st.markdown("**Solution**: Upgrade to a paid tier in Google AI Studio by setting up a billing account for higher rate limits. Visit [Gemini API Pricing](https://ai Grok: .google.dev/pricing) for details.")
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="output-box">', unsafe_allow_html=True)
+        st.subheader("Generated Prompt")
+        st.write(prompt_result)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
