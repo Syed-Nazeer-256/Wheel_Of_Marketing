@@ -1,3 +1,4 @@
-google.generativeai
-docx
-fpdf
+google-generativeai
+python-docx
+latexmk
+texlive-full
