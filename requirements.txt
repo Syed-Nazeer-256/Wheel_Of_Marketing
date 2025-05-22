@@ -1,4 +1,9 @@
-google-generativeai
-python-docx
-latexmk
-texlive-full
+streamlit
+streamlit-lottie
+streamlit-extras
+streamlit-option-menu
+hydralit_components
+plotly
+pandas
+numpy
+pillow
