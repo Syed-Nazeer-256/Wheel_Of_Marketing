@@ -2104,8 +2104,8 @@ def main():
     Main application entry point
     """
     # Load CSS
-    if Path("assets/style.css").exists():
-        local_css("assets/style.css")
+    if Path("style.css").exists():
+        local_css("style.css")
     
     # Add responsive meta tags
     add_responsive_meta_tags()
