@@ -1,9 +1,1 @@
-streamlit
-streamlit-lottie
-streamlit-extras
-streamlit-option-menu
-hydralit_components
-plotly
-pandas
-numpy
-pillow
+google.generativeai
